@@ -1,0 +1,13 @@
+pdfplumber==0.10.3
+pandas==2.1.4
+numpy==1.24.3
+opencv-python==4.8.1.78
+Pillow==10.1.0
+scikit-image==0.21.0
+tabula-py==2.8.2
+camelot-py[cv]==0.11.0
+PyMuPDF==1.23.8
+flask==3.0.0
+flask-cors==4.0.0
+python-dotenv==1.0.0 
+requests==2.31.0

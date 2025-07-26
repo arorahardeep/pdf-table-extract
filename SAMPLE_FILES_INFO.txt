@@ -1,0 +1,24 @@
+
+Sample PDF Files for Testing:
+
+To test the PDF Table Extractor, you can use any PDF file that contains tables.
+Here are some suggestions for finding sample PDFs:
+
+1. Financial Reports (annual reports, quarterly reports)
+2. Research Papers with data tables
+3. Government documents with statistical tables
+4. Business reports with performance metrics
+5. Academic papers with experimental results
+
+You can find sample PDFs from:
+- Company websites (investor relations sections)
+- Government websites (statistics and reports)
+- Academic repositories
+- Research paper databases
+
+Place your PDF files in the project directory and run:
+python example_usage.py
+
+Or use the web interface by running:
+python run.py
+Then visit: http://localhost:5000
