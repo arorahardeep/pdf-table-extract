@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Table Extractor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-section {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            background-color: #fafafa;
+        }
+        .upload-section.dragover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+        .file-input {
+            display: none;
+        }
+        .upload-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .upload-btn:hover {
+            background-color: #0056b3;
+        }
+        .upload-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .options {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .option-group {
+            margin: 10px 0;
+        }
+        label {
+            display: inline-block;
+            width: 150px;
+            font-weight: bold;
+        }
+        select, input[type="checkbox"] {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .table-container {
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .table-header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+        }
+        .table-content {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .summary {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .summary h3 {
+            margin-top: 0;
+        }
+        .download-btn {
+            background-color: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+        }
+        .download-btn:hover {
+            background-color: #218838;
+        }
+        .previous-files {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .files-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+        }
+        .file-info {
+            flex-grow: 1;
+        }
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 PDF Table Extractor</h1>
+        
+        <div class="upload-section" id="uploadSection">
+            <h3>Upload PDF File</h3>
+            <p>Drag and drop a PDF file here or click to select</p>
+            <input type="file" id="fileInput" class="file-input" accept=".pdf">
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                Choose PDF File
+            </button>
+        </div>
+
+        <div class="options">
+            <h3>Extraction Options</h3>
+            <div class="option-group">
+                <label for="outputFormat">Output Format:</label>
+                <select id="outputFormat">
+                    <option value="json">JSON</option>
+                    <option value="excel">Excel</option>
+                    <option value="csv">CSV</option>
+                </select>
+            </div>
+            <div class="option-group">
+                <label for="includeHeaders">Include Headers:</label>
+                <input type="checkbox" id="includeHeaders" checked>
+            </div>
+        </div>
+
+        <button class="upload-btn" id="extractBtn" onclick="extractTables()" disabled>
+            Extract Tables
+        </button>
+
+        <div id="loading" class="loading" style="display: none;">
+            <p>Processing PDF... Please wait...</p>
+        </div>
+
+        <div id="results" class="results"></div>
+        
+        <div id="previous-files" class="previous-files" style="margin-top: 30px;">
+            <h3>📁 Previously Extracted Files</h3>
+            <div id="files-list" class="files-list">
+                <p>Loading previous files...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        const extractBtn = document.getElementById('extractBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const filesList = document.getElementById('files-list');
+
+        let selectedFile = null;
+
+        // Load previous files when page loads
+        window.addEventListener('load', loadPreviousFiles);
+
+        async function loadPreviousFiles() {
+            try {
+                const response = await fetch('/list-json-files');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayPreviousFiles(data.files);
+                } else {
+                    filesList.innerHTML = '<p>No previous files found.</p>';
+                }
+            } catch (error) {
+                filesList.innerHTML = '<p>Error loading previous files.</p>';
+            }
+        }
+
+        function displayPreviousFiles(files) {
+            if (files.length === 0) {
+                filesList.innerHTML = '<p>No previous files found.</p>';
+                return;
+            }
+
+            let html = '<div class="files-grid">';
+            files.forEach(file => {
+                const fileSize = (file.size / 1024).toFixed(1);
+                const modifiedDate = new Date(file.modified).toLocaleString();
+                
+                html += `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <strong>${file.filename}</strong>
+                            <br>
+                            <small>Size: ${fileSize} KB | Modified: ${modifiedDate}</small>
+                        </div>
+                        <div class="file-actions">
+                            <a href="/download-json/${file.filename}" class="download-btn" download="${file.filename}">
+                                📥 Download
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            filesList.innerHTML = html;
+        }
+
+        // Drag and drop functionality
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            if (file.type !== 'application/pdf') {
+                alert('Please select a PDF file');
+                return;
+            }
+            
+            selectedFile = file;
+            extractBtn.disabled = false;
+            
+            // Update UI to show selected file
+            uploadSection.innerHTML = `
+                <h3>Selected File</h3>
+                <p><strong>${file.name}</strong> (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+                <button class="upload-btn" onclick="resetFile()">Choose Different File</button>
+            `;
+        }
+
+        function resetFile() {
+            selectedFile = null;
+            extractBtn.disabled = true;
+            fileInput.value = '';
+            uploadSection.innerHTML = `
+                <h3>Upload PDF File</h3>
+                <p>Drag and drop a PDF file here or click to select</p>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    Choose PDF File
+                </button>
+            `;
+            results.innerHTML = '';
+            
+            // Re-attach event listeners to the new file input
+            const newFileInput = document.getElementById('fileInput');
+            newFileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+        }
+
+        async function extractTables() {
+            if (!selectedFile) {
+                alert('Please select a PDF file first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('output_format', document.getElementById('outputFormat').value);
+            formData.append('include_headers', document.getElementById('includeHeaders').checked);
+
+            loading.style.display = 'block';
+            results.innerHTML = '';
+            extractBtn.disabled = true;
+
+            try {
+                const response = await fetch('/extract-tables', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const outputFormat = document.getElementById('outputFormat').value;
+                    
+                    if (outputFormat === 'json') {
+                        const data = await response.json();
+                        displayResults(data);
+                        
+                        // Add download button for JSON file
+                        const downloadBtn = document.createElement('a');
+                        downloadBtn.href = `/download-json/${data.filename}`;
+                        downloadBtn.className = 'download-btn';
+                        downloadBtn.textContent = 'Download JSON File';
+                        downloadBtn.download = data.filename;
+                        results.appendChild(downloadBtn);
+                    } else {
+                        // Handle file download for Excel/CSV
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `extracted_tables.${outputFormat === 'excel' ? 'xlsx' : 'zip'}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                        
+                        results.innerHTML = `
+                            <div class="success">
+                                <h3>✅ Extraction Complete!</h3>
+                                <p>Your file has been downloaded successfully.</p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Reset file input for next upload
+                    resetFile();
+                    
+                    // Refresh the previous files list
+                    loadPreviousFiles();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to extract tables');
+                }
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                loading.style.display = 'none';
+                extractBtn.disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            let html = `
+                <div class="success">
+                    <h3>✅ Extraction Complete!</h3>
+                    <p>Successfully extracted ${data.summary.total_tables} tables from the PDF.</p>
+                    <button class="upload-btn" onclick="resetFile()" style="margin-top: 10px;">
+                        📄 Upload Another PDF
+                    </button>
+                </div>
+            `;
+
+            // Display summary
+            html += `
+                <div class="summary">
+                    <h3>📊 Summary</h3>
+                    <p><strong>Total Tables:</strong> ${data.summary.total_tables}</p>
+                    <p><strong>Pages Processed:</strong> ${data.summary.pages_processed}</p>
+                    <p><strong>Average Confidence:</strong> ${(data.summary.average_confidence * 100).toFixed(1)}%</p>
+                    <p><strong>Tables by Page:</strong> ${Object.entries(data.summary.tables_by_page).map(([page, count]) => `Page ${page}: ${count}`).join(', ')}</p>
+                </div>
+            `;
+
+            // Display each table
+            data.tables.forEach((table, index) => {
+                html += `
+                    <div class="table-container">
+                        <div class="table-header">
+                            Table ${index + 1} (Page ${table.page_number}) - Confidence: ${(table.confidence_score * 100).toFixed(1)}%
+                        </div>
+                        <div class="table-content">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        ${table.headers.map(header => `<th>${header}</th>`).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${table.data.map(row => `
+                                        <tr>
+                                            ${table.headers.map(header => `<td>${row[header] || ''}</td>`).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            });
+
+            results.innerHTML = html;
+        }
+    </script>
+</body>
+</html> 
